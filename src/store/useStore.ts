@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { NostrClient } from '@/lib/nostr';
 import { MultiRelayApi } from '@/lib/api';
+import { nip07 } from '@/lib/nip07';
 import { NostrEvent, ResearchPaper, RelayConnection, PublishingRelayOption } from '@/types/nostr';
 
 interface AppState {
@@ -12,6 +13,7 @@ interface AppState {
   // User state
   isSignedIn: boolean;
   publicKey: string | null;
+  usingExtension: boolean;
   
   // Relays
   relays: RelayConnection[];
@@ -68,6 +70,7 @@ export const useStore = create<AppState>()(
       multiRelayApi: null,
       isSignedIn: false,
       publicKey: null,
+      usingExtension: false,
       relays: [],
       selectedRelayUrls: [],
       isPublishing: false,
@@ -110,27 +113,52 @@ export const useStore = create<AppState>()(
         const { nostrClient, multiRelayApi } = get();
         if (!nostrClient || !multiRelayApi) return;
 
-        if (privateKey) {
+        let isUsingExtension = false;
+        let publicKey = null;
+
+        if (privateKey?.startsWith('nip07:')) {
+          // NIP-07 browser extension authentication
+          isUsingExtension = true;
+          publicKey = privateKey.replace('nip07:', '');
+          nostrClient.setExtensionMode(publicKey);
+        } else if (privateKey) {
+          // Traditional private key authentication
           nostrClient.setPrivateKey(privateKey);
+          publicKey = nostrClient.getPublicKey();
         } else {
+          // Generate new key
           nostrClient.generateNewKey();
+          publicKey = nostrClient.getPublicKey();
         }
 
         set({
           isSignedIn: true,
-          publicKey: nostrClient.getPublicKey()
+          publicKey,
+          usingExtension: isUsingExtension
         });
 
         // Connect to default relays after signing in
         DEFAULT_RELAYS.forEach(url => {
           multiRelayApi.addRelay(url);
-          nostrClient.addRelay(url).then(connection => {
+          if (!isUsingExtension) {
+            // Only connect with NostrClient if not using extension
+            nostrClient.addRelay(url).then(connection => {
+              set(state => ({
+                relays: [...state.relays.filter(r => r.url !== url), connection]
+              }));
+            }).catch(error => {
+              console.error(`Failed to connect to relay ${url}:`, error);
+            });
+          } else {
+            // For extension users, just mark as connected
             set(state => ({
-              relays: [...state.relays.filter(r => r.url !== url), connection]
+              relays: [...state.relays.filter(r => r.url !== url), {
+                url,
+                status: 'connected',
+                info: { name: url, description: 'Connected via browser extension' }
+              }]
             }));
-          }).catch(error => {
-            console.error(`Failed to connect to relay ${url}:`, error);
-          });
+          }
         });
       },
 
@@ -148,6 +176,7 @@ export const useStore = create<AppState>()(
         set({
           isSignedIn: false,
           publicKey: null,
+          usingExtension: false,
           nostrClient: null,
           multiRelayApi: null,
           relays: [],

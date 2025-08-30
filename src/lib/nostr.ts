@@ -8,11 +8,13 @@ import {
   type Event
 } from 'nostr-tools';
 import { NostrEvent, NostrFilter, RelayConnection, RelayInfo } from '@/types/nostr';
+import { nip07 } from './nip07';
 
 export class NostrClient {
   private privateKey: string | null = null;
   private publicKey: string | null = null;
   private relays: Map<string, RelayConnection> = new Map();
+  private usingExtension: boolean = false;
 
   constructor() {
     // Load keys from localStorage if available
@@ -36,9 +38,21 @@ export class NostrClient {
     this.privateKey = privateKey;
     const privateKeyBytes = new Uint8Array(Buffer.from(privateKey, 'hex'));
     this.publicKey = getPublicKey(privateKeyBytes);
+    this.usingExtension = false;
     
     if (typeof window !== 'undefined') {
       localStorage.setItem('nostr-private-key', privateKey);
+    }
+  }
+
+  setExtensionMode(publicKey: string): void {
+    this.privateKey = null; // Don't store private key for extension users
+    this.publicKey = publicKey;
+    this.usingExtension = true;
+    
+    // Clear any stored private key
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('nostr-private-key');
     }
   }
 
@@ -62,24 +76,42 @@ export class NostrClient {
   }
 
   // Event creation
-  createEvent(kind: number, content: string, tags: string[][] = []): Event | null {
-    if (!this.privateKey) {
-      throw new Error('No private key set');
+  async createEvent(kind: number, content: string, tags: string[][] = []): Promise<Event | null> {
+    if (!this.publicKey) {
+      throw new Error('No public key available');
     }
 
-    const event = {
+    const unsignedEvent = {
       kind,
       content,
       tags,
       created_at: Math.floor(Date.now() / 1000),
-      pubkey: this.publicKey!,
+      pubkey: this.publicKey,
     };
 
-    const privateKeyBytes = new Uint8Array(Buffer.from(this.privateKey, 'hex'));
-    return finalizeEvent(event, privateKeyBytes);
+    if (this.usingExtension) {
+      // Use browser extension to sign
+      try {
+        return await nip07.signEvent(unsignedEvent);
+      } catch (error) {
+        throw new Error(`Extension signing failed: ${error}`);
+      }
+    } else {
+      // Use local private key
+      if (!this.privateKey) {
+        throw new Error('No private key set');
+      }
+      
+      const privateKeyBytes = new Uint8Array(Buffer.from(this.privateKey, 'hex'));
+      return finalizeEvent(unsignedEvent, privateKeyBytes);
+    }
   }
 
-  createResearchPaper(title: string, content: string, summary: string, identifier: string): Event | null {
+  isUsingExtension(): boolean {
+    return this.usingExtension;
+  }
+
+  async createResearchPaper(title: string, content: string, summary: string, identifier: string): Promise<Event | null> {
     const tags = [
       ['title', title],
       ['summary', summary],
@@ -87,10 +119,10 @@ export class NostrClient {
       ['published_at', Math.floor(Date.now() / 1000).toString()]
     ];
 
-    return this.createEvent(30023, content, tags);
+    return await this.createEvent(30023, content, tags);
   }
 
-  createComment(content: string, rootEventId: string, parentEventId?: string): Event | null {
+  async createComment(content: string, rootEventId: string, parentEventId?: string): Promise<Event | null> {
     const tags = [
       ['E', rootEventId], // Root event
       ['K', '30023'], // Root event kind
@@ -100,7 +132,7 @@ export class NostrClient {
       tags.push(['e', parentEventId]); // Parent event for threading
     }
 
-    return this.createEvent(1111, content, tags);
+    return await this.createEvent(1111, content, tags);
   }
 
   // Relay management

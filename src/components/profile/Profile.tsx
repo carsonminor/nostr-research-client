@@ -11,7 +11,8 @@ export default function Profile() {
     relays, 
     addRelay, 
     removeRelay,
-    signOut
+    signOut,
+    usingExtension
   } = useStore();
 
   const [newRelayUrl, setNewRelayUrl] = useState('');
@@ -46,7 +47,15 @@ export default function Profile() {
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Profile Info */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Profile</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Profile</h2>
+          {usingExtension && (
+            <div className="flex items-center space-x-2 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+              <span>🔌</span>
+              <span>Browser Extension</span>
+            </div>
+          )}
+        </div>
         
         <div className="space-y-4">
           <div>
@@ -185,21 +194,22 @@ export default function Profile() {
         
         <div className="space-y-6">
           {/* Private Key Export */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h4 className="font-medium text-gray-900">Private Key Export</h4>
-                <p className="text-sm text-gray-500">
-                  Export your private key for backup or use in other Nostr clients.
-                </p>
+          {!usingExtension ? (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h4 className="font-medium text-gray-900">Private Key Export</h4>
+                  <p className="text-sm text-gray-500">
+                    Export your private key for backup or use in other Nostr clients.
+                  </p>
+                </div>
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowPrivateKey(!showPrivateKey)}
+                >
+                  {showPrivateKey ? 'Hide' : 'Show'} Private Key
+                </Button>
               </div>
-              <Button 
-                variant="outline"
-                onClick={() => setShowPrivateKey(!showPrivateKey)}
-              >
-                {showPrivateKey ? 'Hide' : 'Show'} Private Key
-              </Button>
-            </div>
 
             {showPrivateKey && (
               <div className="space-y-4 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -263,7 +273,22 @@ export default function Profile() {
                 </div>
               </div>
             )}
-          </div>
+            </div>
+          ) : (
+            <div>
+              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <span className="text-purple-600">🔌</span>
+                  <div>
+                    <h4 className="font-medium text-purple-900">Browser Extension Mode</h4>
+                    <p className="text-sm text-purple-700">
+                      Your keys are managed by your browser extension. Private key export is not available in this mode for security.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* Account Deletion */}
           <div>

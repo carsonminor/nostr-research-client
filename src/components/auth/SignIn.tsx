@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { nip19 } from 'nostr-tools';
 import { Button } from '@/components/ui/Button';
+import { detectExtensionType, isExtensionAvailable, nip07 } from '@/lib/nip07';
 
 interface SignInProps {
   onSignIn: (privateKey?: string) => void;
@@ -14,6 +15,46 @@ export default function SignIn({ onSignIn, isLoading = false }: SignInProps) {
   const [privateKey, setPrivateKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [error, setError] = useState('');
+  const [extensionType, setExtensionType] = useState<string | null>(null);
+  const [isExtensionLoading, setIsExtensionLoading] = useState(false);
+
+  useEffect(() => {
+    // Check for browser extension after component mounts
+    const checkExtension = () => {
+      const type = detectExtensionType();
+      setExtensionType(type);
+    };
+
+    // Check immediately and after a short delay (extensions might load asynchronously)
+    checkExtension();
+    const timer = setTimeout(checkExtension, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleExtensionSignIn = async () => {
+    setIsExtensionLoading(true);
+    setError('');
+
+    try {
+      const success = await nip07.initialize();
+      if (success) {
+        const pubkey = nip07.getPublicKey();
+        if (pubkey) {
+          // For NIP-07, we don't get the private key - the extension handles signing
+          onSignIn('nip07:' + pubkey); // Special flag to indicate NIP-07 usage
+        } else {
+          setError('Failed to get public key from extension');
+        }
+      } else {
+        setError('Failed to connect to browser extension');
+      }
+    } catch (error) {
+      setError(`Extension error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsExtensionLoading(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,6 +108,43 @@ export default function SignIn({ onSignIn, isLoading = false }: SignInProps) {
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
           <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
             <div className="space-y-4">
+              {/* Browser Extension Sign In */}
+              {extensionType ? (
+                <div className="mb-6">
+                  <Button
+                    onClick={handleExtensionSignIn}
+                    className="w-full bg-purple-600 hover:bg-purple-700"
+                    disabled={isLoading || isExtensionLoading}
+                  >
+                    {isExtensionLoading ? (
+                      'Connecting...'
+                    ) : (
+                      <>
+                        🔌 Sign In with {extensionType}
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    Detected: {extensionType} browser extension
+                  </p>
+                  
+                  <div className="my-4 relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-200" />
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-2 bg-white text-gray-500">or</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                  <p className="text-sm text-blue-700">
+                    💡 <strong>Tip:</strong> Install <a href="https://getalby.com" className="underline">Alby</a> or <a href="https://github.com/fiatjaf/nos2x" className="underline">nos2x</a> for easier sign-in!
+                  </p>
+                </div>
+              )}
+
               <Button
                 onClick={() => setMode('create')}
                 className="w-full"
@@ -81,7 +159,7 @@ export default function SignIn({ onSignIn, isLoading = false }: SignInProps) {
                 className="w-full"
                 disabled={isLoading}
               >
-                Sign In with Existing Key
+                Sign In with Private Key
               </Button>
             </div>
 
