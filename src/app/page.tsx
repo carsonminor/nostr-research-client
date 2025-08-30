@@ -6,13 +6,19 @@ import Header from '@/components/layout/Header';
 import PapersList from '@/components/browse/PapersList';
 import PublishForm from '@/components/publish/PublishForm';
 import Profile from '@/components/profile/Profile';
+import SignIn from '@/components/auth/SignIn';
 
 export default function Home() {
-  const { activeTab, initializeNostr } = useStore();
+  const { activeTab, isSignedIn, initializeNostr, signIn } = useStore();
 
   useEffect(() => {
     initializeNostr();
   }, [initializeNostr]);
+
+  // Show sign in screen if user is not signed in
+  if (!isSignedIn) {
+    return <SignIn onSignIn={signIn} />;
+  }
 
   const renderActiveTab = () => {
     switch (activeTab) {

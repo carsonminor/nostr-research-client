@@ -77,33 +77,38 @@ export const useStore = create<AppState>()(
       isLoadingPapers: false,
       activeTab: 'browse',
 
-      // Initialize Nostr client
+      // Initialize Nostr client (without auto-generating keys)
       initializeNostr: () => {
         const client = new NostrClient();
         const api = new MultiRelayApi();
+        
+        // Check if user already has keys stored
+        const hasExistingKeys = !!client.getPublicKey();
         
         set({ 
           nostrClient: client, 
           multiRelayApi: api,
           publicKey: client.getPublicKey(),
-          isSignedIn: !!client.getPublicKey()
+          isSignedIn: hasExistingKeys
         });
 
-        // Add default relays
-        DEFAULT_RELAYS.forEach(url => {
-          api.addRelay(url);
-          client.addRelay(url).then(connection => {
-            set(state => ({
-              relays: [...state.relays.filter(r => r.url !== url), connection]
-            }));
+        // Only add relays if user is signed in
+        if (hasExistingKeys) {
+          DEFAULT_RELAYS.forEach(url => {
+            api.addRelay(url);
+            client.addRelay(url).then(connection => {
+              set(state => ({
+                relays: [...state.relays.filter(r => r.url !== url), connection]
+              }));
+            });
           });
-        });
+        }
       },
 
       // Sign in with existing or new key
       signIn: (privateKey?: string) => {
-        const { nostrClient } = get();
-        if (!nostrClient) return;
+        const { nostrClient, multiRelayApi } = get();
+        if (!nostrClient || !multiRelayApi) return;
 
         if (privateKey) {
           nostrClient.setPrivateKey(privateKey);
@@ -114,6 +119,18 @@ export const useStore = create<AppState>()(
         set({
           isSignedIn: true,
           publicKey: nostrClient.getPublicKey()
+        });
+
+        // Connect to default relays after signing in
+        DEFAULT_RELAYS.forEach(url => {
+          multiRelayApi.addRelay(url);
+          nostrClient.addRelay(url).then(connection => {
+            set(state => ({
+              relays: [...state.relays.filter(r => r.url !== url), connection]
+            }));
+          }).catch(error => {
+            console.error(`Failed to connect to relay ${url}:`, error);
+          });
         });
       },
 

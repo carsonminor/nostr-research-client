@@ -10,13 +10,17 @@ export default function Profile() {
     nostrClient, 
     relays, 
     addRelay, 
-    removeRelay 
+    removeRelay,
+    signOut
   } = useStore();
 
   const [newRelayUrl, setNewRelayUrl] = useState('');
   const [isAddingRelay, setIsAddingRelay] = useState(false);
+  const [showPrivateKey, setShowPrivateKey] = useState(false);
 
   const npub = nostrClient?.getPublicKeyNpub();
+  const privateKey = nostrClient?.getPrivateKey();
+  const nsec = nostrClient?.getPrivateKeyNsec();
 
   const handleAddRelay = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,23 +183,101 @@ export default function Profile() {
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-xl font-semibold text-gray-900 mb-6">Account Actions</h3>
         
-        <div className="space-y-4">
+        <div className="space-y-6">
+          {/* Private Key Export */}
           <div>
-            <Button variant="outline">
-              Export Private Key
-            </Button>
-            <p className="text-sm text-gray-500 mt-1">
-              Export your private key for backup or use in other Nostr clients.
-            </p>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h4 className="font-medium text-gray-900">Private Key Export</h4>
+                <p className="text-sm text-gray-500">
+                  Export your private key for backup or use in other Nostr clients.
+                </p>
+              </div>
+              <Button 
+                variant="outline"
+                onClick={() => setShowPrivateKey(!showPrivateKey)}
+              >
+                {showPrivateKey ? 'Hide' : 'Show'} Private Key
+              </Button>
+            </div>
+
+            {showPrivateKey && (
+              <div className="space-y-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="mb-4 p-3 bg-red-100 border border-red-200 rounded">
+                  <p className="text-sm text-red-800 font-medium">
+                    ⚠️ Warning: Never share your private key with anyone!
+                  </p>
+                  <p className="text-sm text-red-700 mt-1">
+                    Anyone with access to your private key can control your account.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Private Key (hex)
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={privateKey || ''}
+                      readOnly
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 font-mono text-xs"
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => privateKey && copyToClipboard(privateKey)}
+                    >
+                      Copy
+                    </Button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Private Key (nsec)
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={nsec || ''}
+                      readOnly
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 font-mono text-xs"
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => nsec && copyToClipboard(nsec)}
+                    >
+                      Copy
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="text-sm text-gray-600">
+                  <p className="mb-2"><strong>Key Formats:</strong></p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li><strong>Hex:</strong> Raw 64-character hexadecimal format</li>
+                    <li><strong>nsec:</strong> Bech32 encoded format (starts with 'nsec'), more user-friendly</li>
+                  </ul>
+                </div>
+              </div>
+            )}
           </div>
           
+          {/* Account Deletion */}
           <div>
-            <Button variant="destructive">
-              Delete Account
-            </Button>
-            <p className="text-sm text-gray-500 mt-1">
-              This will remove your private key from this device. Make sure you have a backup.
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium text-gray-900">Delete Account</h4>
+                <p className="text-sm text-gray-500">
+                  This will remove your private key from this device. Make sure you have a backup.
+                </p>
+              </div>
+              <Button variant="destructive" onClick={signOut}>
+                Sign Out
+              </Button>
+            </div>
           </div>
         </div>
         

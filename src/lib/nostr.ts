@@ -46,9 +46,19 @@ export class NostrClient {
     return this.publicKey;
   }
 
+  getPrivateKey(): string | null {
+    return this.privateKey;
+  }
+
   getPublicKeyNpub(): string | null {
     if (!this.publicKey) return null;
     return nip19.npubEncode(this.publicKey);
+  }
+
+  getPrivateKeyNsec(): string | null {
+    if (!this.privateKey) return null;
+    const privateKeyBytes = new Uint8Array(Buffer.from(this.privateKey, 'hex'));
+    return nip19.nsecEncode(privateKeyBytes);
   }
 
   // Event creation
