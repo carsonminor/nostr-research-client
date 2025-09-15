@@ -1,9 +1,11 @@
 // NIP-07 Browser Extension Support (Alby, nos2x, etc.)
 // Ref: https://github.com/nostr-protocol/nips/blob/master/07.md
 
+import { NostrEvent, UnsignedNostrEvent } from '@/types/nostr';
+
 export interface NostrExtension {
   getPublicKey(): Promise<string>;
-  signEvent(event: any): Promise<any>;
+  signEvent(event: UnsignedNostrEvent): Promise<NostrEvent>;
   getRelays?(): Promise<Record<string, { read: boolean; write: boolean }>>;
   nip04?: {
     encrypt(pubkey: string, plaintext: string): Promise<string>;
@@ -53,7 +55,7 @@ export class NIP07Provider {
     return this.publicKey;
   }
 
-  async signEvent(event: any): Promise<any> {
+  async signEvent(event: UnsignedNostrEvent): Promise<NostrEvent> {
     if (!this.extension) {
       throw new Error('No NIP-07 extension available');
     }
@@ -107,8 +109,8 @@ export function detectExtensionType(): string | null {
   if (typeof window === 'undefined') return null;
   
   // Check for specific extension markers
-  if ((window as any).alby) return 'Alby';
-  if ((window as any).nos2x) return 'nos2x';
+  if ((window as { alby?: unknown }).alby) return 'Alby';
+  if ((window as { nos2x?: unknown }).nos2x) return 'nos2x';
   if (window.nostr) return 'Unknown NIP-07 Extension';
   
   return null;

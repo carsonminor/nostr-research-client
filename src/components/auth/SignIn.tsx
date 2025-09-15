@@ -304,7 +304,7 @@ export default function SignIn({ onSignIn, isLoading = false }: SignInProps) {
                 <p className="font-medium">Supported formats:</p>
                 <ul className="mt-1 list-disc list-inside">
                   <li><strong>Hex:</strong> 64 character hexadecimal string</li>
-                  <li><strong>nsec:</strong> Bech32 encoded private key (starts with 'nsec')</li>
+                  <li><strong>nsec:</strong> Bech32 encoded private key (starts with &apos;nsec&apos;)</li>
                 </ul>
               </div>
             </div>

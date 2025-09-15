@@ -2,8 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { NostrClient } from '@/lib/nostr';
 import { MultiRelayApi } from '@/lib/api';
-import { nip07 } from '@/lib/nip07';
-import { NostrEvent, ResearchPaper, RelayConnection, PublishingRelayOption } from '@/types/nostr';
+import { ResearchPaper, RelayConnection, PublishingRelayOption } from '@/types/nostr';
 
 interface AppState {
   // Nostr client
@@ -59,7 +58,6 @@ interface AppState {
 
 const DEFAULT_RELAYS = [
   'ws://localhost:8080', // Local test relay
-  'wss://relay.example.com', // Example relay
 ];
 
 export const useStore = create<AppState>()(
@@ -154,8 +152,15 @@ export const useStore = create<AppState>()(
             set(state => ({
               relays: [...state.relays.filter(r => r.url !== url), {
                 url,
-                status: 'connected',
-                info: { name: url, description: 'Connected via browser extension' }
+                status: 'connected' as const,
+                info: {
+                  name: url,
+                  description: 'Connected via browser extension',
+                  supported_nips: [],
+                  software: 'browser-extension',
+                  version: '1.0.0'
+                },
+                subscriptions: new Map()
               }]
             }));
           }

@@ -1,12 +1,16 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { useStore } from '@/store/useStore';
 import { formatDate, formatFileSize, truncateText } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
+import { ResearchPaper } from '@/types/nostr';
 
 export default function PapersList() {
   const { papers, isLoadingPapers, loadPapers } = useStore();
+  const router = useRouter();
 
   useEffect(() => {
     loadPapers();
@@ -52,7 +56,7 @@ export default function PapersList() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {papers.map((paper) => (
-          <PaperCard key={paper.id} paper={paper} />
+          <PaperCard key={paper.id} paper={paper} router={router} />
         ))}
       </div>
     </div>
@@ -60,20 +64,23 @@ export default function PapersList() {
 }
 
 interface PaperCardProps {
-  paper: any; // Using ResearchPaper type
+  paper: ResearchPaper;
+  router: AppRouterInstance;
 }
 
-function PaperCard({ paper }: PaperCardProps) {
+function PaperCard({ paper, router }: PaperCardProps) {
   const handleViewPaper = () => {
-    // TODO: Open paper in modal or new page
-    console.log('View paper:', paper.event_id);
+    router.push(`/paper/${paper.event_id}`);
   };
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
       <div className="space-y-4">
         {/* Title */}
-        <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
+        <h3 
+          className="text-lg font-semibold text-blue-600 hover:text-blue-800 cursor-pointer line-clamp-2 transition-colors"
+          onClick={handleViewPaper}
+        >
           {paper.title}
         </h3>
 
@@ -121,10 +128,6 @@ function PaperCard({ paper }: PaperCardProps) {
           }`}>
             {paper.status.replace('_', ' ')}
           </span>
-          
-          <Button size="sm" onClick={handleViewPaper}>
-            Read Paper
-          </Button>
         </div>
       </div>
     </div>

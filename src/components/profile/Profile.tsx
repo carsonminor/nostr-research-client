@@ -268,7 +268,7 @@ export default function Profile() {
                   <p className="mb-2"><strong>Key Formats:</strong></p>
                   <ul className="list-disc list-inside space-y-1">
                     <li><strong>Hex:</strong> Raw 64-character hexadecimal format</li>
-                    <li><strong>nsec:</strong> Bech32 encoded format (starts with 'nsec'), more user-friendly</li>
+                    <li><strong>nsec:</strong> Bech32 encoded format (starts with &apos;nsec&apos;), more user-friendly</li>
                   </ul>
                 </div>
               </div>

@@ -6,7 +6,10 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "export": "next export",
+    "prepare-docs": "rm -rf docs && mkdir docs && cp -R out/* docs/ && touch docs/.nojekyll",
+    "deploy": "npm run build && npm run export && npm run prepare-docs"
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",
@@ -17,6 +20,7 @@
     "qr-code-styling": "^1.9.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-markdown": "^10.1.0",
     "tailwind-merge": "^3.3.1",
     "uuid": "^11.1.0",
     "zustand": "^5.0.7"

@@ -8,6 +8,14 @@ export interface NostrEvent {
   sig: string;
 }
 
+export interface UnsignedNostrEvent {
+  pubkey: string;
+  created_at: number;
+  kind: number;
+  tags: string[][];
+  content: string;
+}
+
 export interface NostrFilter {
   ids?: string[];
   authors?: string[];

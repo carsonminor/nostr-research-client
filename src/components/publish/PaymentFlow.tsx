@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import { Button } from '@/components/ui/Button';
+import { PublishingRelayOption } from '@/types/nostr';
 
 interface PaymentFlowProps {
   onBack: () => void;
@@ -73,7 +74,7 @@ export default function PaymentFlow({ onBack, onFinish }: PaymentFlowProps) {
     setIsPublishing(true);
     try {
       // Create the Nostr event
-      const event = nostrClient.createResearchPaper(
+      const event = await nostrClient.createResearchPaper(
         currentPaper.title,
         currentPaper.content,
         currentPaper.abstract,
@@ -216,7 +217,7 @@ export default function PaymentFlow({ onBack, onFinish }: PaymentFlowProps) {
 }
 
 interface PaymentCardProps {
-  relay: any; // PublishingRelayOption
+  relay: PublishingRelayOption;
   onPayment: () => void;
   publishResult?: boolean;
 }

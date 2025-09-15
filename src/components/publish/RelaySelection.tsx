@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import { formatFileSize } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
+import { PricingInfo } from '@/types/nostr';
 
 interface RelaySelectionProps {
   onNext: () => void;
@@ -19,7 +20,7 @@ export default function RelaySelection({ onNext, onBack }: RelaySelectionProps) 
     multiRelayApi 
   } = useStore();
 
-  const [relayPricing, setRelayPricing] = useState<Map<string, any>>(new Map());
+  const [relayPricing, setRelayPricing] = useState<Map<string, PricingInfo>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -56,7 +57,7 @@ export default function RelaySelection({ onNext, onBack }: RelaySelectionProps) 
     return total + (pricing?.amount_sats || 0);
   }, 0);
 
-  const canProceed = selectedRelayUrls.length >= 2; // Minimum 2 relays as per requirements
+  const canProceed = selectedRelayUrls.length >= 1; // Minimum 1 relay for testing
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -147,8 +148,8 @@ export default function RelaySelection({ onNext, onBack }: RelaySelectionProps) 
       {/* Requirements notice */}
       <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
         <p className="text-sm text-yellow-800">
-          <strong>Note:</strong> You must select at least 2 relays for redundancy and resilience.
-          This ensures your research paper remains accessible even if one relay goes offline.
+          <strong>Note:</strong> You must select at least 1 relay for testing.
+          For production use, consider selecting multiple relays for redundancy and resilience.
         </p>
       </div>
 

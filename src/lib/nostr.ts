@@ -135,6 +135,46 @@ export class NostrClient {
     return await this.createEvent(1111, content, tags);
   }
 
+  // NIP-84: Create highlight event
+  async createHighlight(
+    highlightedText: string, 
+    sourceEventId: string, 
+    context?: string,
+    position?: { start: number; end: number }
+  ): Promise<Event | null> {
+    const tags = [
+      ['e', sourceEventId], // Reference to source event
+      ['context', context || ''], // Surrounding text context
+    ];
+
+    // Add position data as custom tags if provided
+    if (position) {
+      tags.push(['range', `${position.start}:${position.end}`]);
+    }
+
+    return await this.createEvent(9802, highlightedText, tags);
+  }
+
+  // Create comment on highlight (kind 1 reply)
+  async createHighlightComment(content: string, highlightEventId: string): Promise<Event | null> {
+    const tags = [
+      ['e', highlightEventId], // Reply to highlight
+      ['k', '9802'], // Highlight kind
+    ];
+
+    return await this.createEvent(1, content, tags);
+  }
+
+  // NIP-25: Create reaction (like/dislike)
+  async createReaction(targetEventId: string, content: string = '+'): Promise<Event | null> {
+    const tags = [
+      ['e', targetEventId],
+      ['k', '1'], // Reacting to comment
+    ];
+
+    return await this.createEvent(7, content, tags);
+  }
+
   // Relay management
   async addRelay(url: string): Promise<RelayConnection> {
     const relay = new Relay(url);
@@ -151,7 +191,7 @@ export class NostrClient {
     try {
       await relay.connect();
       connection.status = 'connected';
-      connection.websocket = relay as any;
+      connection.websocket = relay as unknown as WebSocket;
       
       // Fetch relay info
       try {
@@ -278,7 +318,7 @@ export class NostrClient {
         const sub = relay.subscribe(filters, {
           onevent: onEvent
         });
-        connection.subscriptions.set(subscriptionId, filters as any);
+        connection.subscriptions.set(subscriptionId, filters);
       } catch (error) {
         console.error(`Failed to subscribe to ${url}:`, error);
       }
